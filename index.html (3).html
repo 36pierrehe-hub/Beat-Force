@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Beatforce — Music Studio</title>
+<style>
+:root{--bg:#101116;--panel:#191b24;--panel2:#222530;--line:#303442;--text:#f2f3f8;--muted:#9299aa;--purple:#9b6cff;--cyan:#48d9e8;--green:#57d99b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Arial,sans-serif}
+button,input,select{font:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--text);padding:9px 13px;border-radius:7px}
+button:hover{border-color:var(--purple)}
+.top{height:65px;background:#151720;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 22px;gap:12px}
+.logo{font-size:22px;font-weight:900;letter-spacing:1px}.logo span{color:var(--purple)}
+.top-actions{display:flex;gap:8px;align-items:center}
+.primary{background:var(--purple);border-color:var(--purple);color:white;font-weight:bold}
+.play{background:#214c3d;border-color:#367b60}
+.layout{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:calc(100vh - 65px)}
+.sidebar{background:#151720;border-right:1px solid var(--line);padding:18px}
+h3{font-size:12px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin:8px 0 14px}
+.instrument{width:100%;text-align:left;margin-bottom:8px;background:var(--panel);display:flex;justify-content:space-between}
+.instrument small{color:var(--muted)}
+main{padding:20px;min-width:0}
+.projectbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px}
+.projectbar input{background:var(--panel);border:1px solid var(--line);color:white;padding:10px;border-radius:7px;width:220px}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;color:var(--muted);font-size:13px}
+.controls input{width:65px;background:var(--panel);color:white;border:1px solid var(--line);padding:8px;border-radius:6px}
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:16px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.panelhead{padding:13px 15px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
+.panelhead strong{font-size:14px}
+.tracks{padding:10px}
+.track{display:grid;grid-template-columns:145px minmax(0,1fr);min-height:58px;border-bottom:1px solid var(--line)}
+.track:last-child{border-bottom:0}
+.trackinfo{padding:10px;display:flex;flex-direction:column;gap:6px;border-right:1px solid var(--line)}
+.trackinfo strong{font-size:12px}
+.trackinfo small{font-size:10px;color:var(--muted)}
+.trackinfo button{padding:3px 6px;font-size:10px;width:max-content}
+.trackgrid{display:grid;grid-template-columns:repeat(16,minmax(12px,1fr));align-items:stretch;position:relative;background:repeating-linear-gradient(90deg,transparent 0,transparent calc(6.25% - 1px),#303442 calc(6.25% - 1px),#303442 6.25%)}
+.clip{background:linear-gradient(135deg,#8654e8,#5638a7);border-radius:4px;margin:7px 2px;grid-column:span 4;min-height:40px;display:flex;align-items:center;justify-content:center;font-size:10px;color:white}
+.clip.empty{background:transparent;border:1px dashed #444957;color:#777}
+.rollwrap{overflow-x:auto;padding:10px}
+.roll{min-width:620px}
+.rolllabels{display:grid;grid-template-columns:55px repeat(16,1fr);font-size:10px;color:var(--muted);text-align:center;margin-bottom:4px}
+.rollrow{display:grid;grid-template-columns:55px repeat(16,1fr);height:25px}
+.pitch{font-size:10px;color:var(--muted);padding:5px}
+.cell{border:1px solid #303442;background:#20232d;cursor:pointer}
+.cell:nth-child(4n+2){border-left-color:#555d70}
+.cell.active{background:var(--cyan);border-color:var(--cyan)}
+.cell:hover{background:#45405f}
+.hint{font-size:12px;color:var(--muted);padding:0 14px 13px}
+.mixer{padding:12px}
+.mixrow{padding:12px 0;border-bottom:1px solid var(--line)}
+.mixrow:last-child{border:0}
+.mixrow strong{font-size:12px}
+.mixrow input{width:100%;margin-top:8px;accent-color:var(--purple)}
+.mixrow small{color:var(--muted)}
+.status{font-size:12px;color:var(--green);margin-top:10px;min-height:16px}
+.footer{color:var(--muted);font-size:11px;padding:8px 0}
+@media(max-width:850px){.layout{grid-template-columns:1fr}.sidebar{border-right:0;border-bottom:1px solid var(--line)}.sidebar .instrument{display:inline-flex;width:auto;margin-right:5px}.workspace{grid-template-columns:1fr}.top{padding:0 12px}.logo{font-size:18px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="logo">BEAT<span>FORCE</span></div>
+  <div class="top-actions">
+    <button id="play" class="play">▶ Play</button>
+    <button id="stop">■ Stop</button>
+    <button id="save" class="primary">Save Project</button>
+  </div>
+</header>
+<div class="layout">
+  <aside class="sidebar">
+    <h3>Instrument Library</h3>
+    <div id="library"></div>
+    <h3 style="margin-top:25px">Project</h3>
+    <button id="addTrack" style="width:100%">＋ Add Track</button>
+    <button id="clear" style="width:100%;margin-top:8px">Clear Notes</button>
+    <div class="status" id="status"></div>
+  </aside>
+  <main>
+    <div class="projectbar">
+      <input id="projectName" value="My First Beat" aria-label="Project name">
+      <div class="controls">
+        <label>Tempo <input id="tempo" type="number" min="40" max="240" value="120"> BPM</label>
+        <label>Bars <select id="bars"><option>4</option><option selected>8</option><option>16</option></select></label>
+      </div>
+    </div>
+    <div class="workspace">
+      <div>
+        <section class="panel">
+          <div class="panelhead"><strong>ARRANGEMENT</strong><span style="font-size:11px;color:var(--muted)">Song timeline</span></div>
+          <div class="tracks" id="tracks"></div>
+        </section>
+        <section class="panel">
+          <div class="panelhead"><strong>PIANO ROLL</strong><span id="selectedName" style="font-size:11px;color:var(--cyan)">Piano</span></div>
+          <div class="rollwrap"><div class="roll" id="roll"></div></div>
+          <div class="hint">Click the squares to add or remove notes. Each column is one beat.</div>
+        </section>
+      </div>
+      <aside>
+        <section class="panel"><div class="panelhead"><strong>MIXER</strong></div><div class="mixer" id="mixer"></div></section>
+        <section class="panel">
+          <div class="panelhead"><strong>PROJECT TOOLS</strong></div>
+          <div class="mixer">
+            <button id="export" style="width:100%">↓ Export Project</button>
+            <button id="import" style="width:100%;margin-top:8px">↑ Import Project</button>
+            <input type="file" id="file" accept=".json" hidden>
+            <p class="hint" style="padding:12px 0 0">Your project can be saved as a file and reopened later.</p>
+          </div>
+        </section>
+      </aside>
+    </div>
+    <div class="footer">BEATFORCE STUDIO · Your music, your ideas.</div>
+  </main>
+</div>
+<script>
+const instruments=[
+ {name:"Piano",type:"sine"},{name:"Electric Piano",type:"triangle"},
+ {name:"Synth",type:"sawtooth"},{name:"Bass",type:"square"},
+ {name:"Electric Guitar",type:"triangle"},{name:"Strings",type:"sawtooth"},
+ {name:"Drum Kit",type:"drums"}
+];
+let tracks=[
+ {name:"Piano",type:"sine",notes:[],volume:.7,muted:false},
+ {name:"Drum Kit",type:"drums",notes:[],volume:.7,muted:false}
+];
+let selected=0,audioCtx=null,playing=false,playTimer=null,playStep=0;
+const $=id=>document.getElementById(id);
+function status(msg){$("status").textContent=msg}
+function noteFrequency(pitch){return 440*Math.pow(2,(pitch-69)/12)}
+function addTrack(name,type){tracks.push({name,type,notes:[],volume:.7,muted:false});selected=tracks.length-1;render()}
+function renderLibrary(){
+ $("library").innerHTML="";
+ instruments.forEach(inst=>{
+  const b=document.createElement("button");b.className="instrument";
+  b.innerHTML=`<span>${inst.name}</span><small>＋</small>`;
+  b.onclick=()=>addTrack(inst.name,inst.type);$("library").appendChild(b);
+ });
+}
+function renderTracks(){
+ $("tracks").innerHTML="";
+ tracks.forEach((t,i)=>{
+  const row=document.createElement("div");row.className="track";
+  const info=document.createElement("div");info.className="trackinfo";
+  info.innerHTML=`<strong>${t.name}</strong><small>Track ${i+1}</small>`;
+  const choose=document.createElement("button");choose.textContent=i===selected?"Selected":"Edit notes";
+  choose.onclick=()=>{selected=i;render()};info.appendChild(choose);
+  const grid=document.createElement("div");grid.className="trackgrid";
+  const clip=document.createElement("div");clip.className="clip"+(t.notes.length?"":" empty");
+  clip.textContent=t.notes.length?`${t.notes.length} notes`:"Empty region";
+  grid.appendChild(clip);row.append(info,grid);$("tracks").appendChild(row);
+ });
+}
+function renderRoll(){
+ const roll=$("roll");roll.innerHTML="";
+ const labels=document.createElement("div");labels.className="rolllabels";
+ labels.innerHTML="<span>NOTE</span>"+Array.from({length:16},(_,i)=>`<span>${i+1}</span>`).join("");roll.appendChild(labels);
+ const pitches=Array.from({length:32},(_,i)=>84-i);
+ pitches.forEach(p=>{
+  const row=document.createElement("div");row.className="rollrow";
+  const label=document.createElement("div");label.className="pitch";
+  const names=["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B"];
+  label.textContent=names[p%12]+(Math.floor(p/12)-1);row.appendChild(label);
+  for(let step=0;step<16;step++){
+   const cell=document.createElement("div");cell.className="cell";
+   if(tracks[selected].notes.some(n=>n.pitch===p&&n.step===step))cell.classList.add("active");
+   cell.onclick=()=>{
+    const notes=tracks[selected].notes,index=notes.findIndex(n=>n.pitch===p&&n.step===step);
+    if(index>=0)notes.splice(index,1);else notes.push({pitch:p,step});
+    render();
+   };
+   row.appendChild(cell);
+  }
+  roll.appendChild(row);
+ });
+ $("selectedName").textContent=tracks[selected].name;
+}
+function renderMixer(){
+ $("mixer").innerHTML="";
+ tracks.forEach(t=>{
+  const div=document.createElement("div");div.className="mixrow";
+  const title=document.createElement("strong");title.textContent=t.name;
+  const mute=document.createElement("button");mute.textContent=t.muted?"Unmute":"Mute";mute.style.float="right";
+  mute.onclick=()=>{t.muted=!t.muted;renderMixer()};
+  const range=document.createElement("input");range.type="range";range.min=0;range.max=1;range.step=.01;range.value=t.volume;
+  range.oninput=()=>t.volume=Number(range.value);
+  const small=document.createElement("small");small.textContent="Volume";
+  div.append(title,mute,small,range);$("mixer").appendChild(div);
+ });
+}
+function render(){renderTracks();renderRoll();renderMixer()}
+function getContext(){
+ if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+ if(audioCtx.state==="suspended")audioCtx.resume();return audioCtx;
+}
+function playNote(track,pitch,duration=.22,when=null){
+ if(track.muted)return;
+ const ctx=getContext(),start=when??ctx.currentTime;
+ if(track.type==="drums"){
+  const osc=ctx.createOscillator(),gain=ctx.createGain();
+  osc.type="sine";osc.frequency.setValueAtTime(pitch<60?100:pitch<65?180:650,start);
+  gain.gain.setValueAtTime(track.volume*.35,start);gain.gain.exponentialRampToValueAtTime(.001,start+.12);
+  osc.connect(gain);gain.connect(ctx.destination);osc.start(start);osc.stop(start+.13);return;
+ }
+ const osc=ctx.createOscillator(),gain=ctx.createGain();
+ osc.type=track.type;osc.frequency.value=noteFrequency(pitch);
+ gain.gain.setValueAtTime(track.volume*.18,start);gain.gain.setTargetAtTime(.001,start+duration*.7,.06);
+ osc.connect(gain);gain.connect(ctx.destination);osc.start(start);osc.stop(start+duration);
+}
+function stop(){playing=false;clearInterval(playTimer);$("play").textContent="▶ Play"}
+function start(){
+ if(playing)return;getContext();playing=true;playStep=0;$("play").textContent="Playing…";
+ const bpm=Math.max(40,Math.min(240,Number($("tempo").value)||120)),beat=60000/bpm;
+ function tick(){
+  tracks.forEach(t=>t.notes.forEach(n=>{if(n.step===playStep)playNote(t,n.pitch,beat/1000*.85)}));
+  playStep=(playStep+1)%16;
+ }
+ tick();playTimer=setInterval(tick,beat);
+}
+function projectData(){return {name:$("projectName").value,tempo:Number($("tempo").value),tracks}}
+function download(data,name,type){
+ const blob=new Blob([data],{type}),url=URL.createObjectURL(blob);
+ const a=document.createElement("a");a.href=url;a.download=name;a.click();URL.revokeObjectURL(url);
+}
+$("play").onclick=start;$("stop").onclick=stop;
+$("addTrack").onclick=()=>addTrack("New Instrument","sine");
+$("clear").onclick=()=>{tracks[selected].notes=[];render();status("Notes cleared.")};
+$("save").onclick=()=>{download(JSON.stringify(projectData(),null,2),"beatforce-project.json","application/json");status("Project saved to your device.")};
+$("export").onclick=()=>{download(JSON.stringify(projectData(),null,2),"beatforce-project.json","application/json");status("Project exported.")};
+$("import").onclick=()=>$("file").click();
+$("file").onchange=async e=>{
+ const f=e.target.files[0];if(!f)return;
+ try{
+  const data=JSON.parse(await f.text());if(!Array.isArray(data.tracks))throw Error("Invalid project");
+  tracks=data.tracks;selected=0;$("projectName").value=data.name||"Imported Project";
+  $("tempo").value=data.tempo||120;render();status("Project imported.");
+ }catch(err){status("Could not read that project file.");}
+};
+renderLibrary();render();
+</script>
+</body>
+</html>
